@@ -22,7 +22,7 @@ class APITestCase(unittest.TestCase):
         self.assertIn('text/html', response.content_type)
 
     def test_protected_with_invalid_token(self):
-        invalid_token = "invalid_token_example"
+        invalid_token = "token incorreto"
         response = self.client.get('/protected', headers={'Authorization': f'Bearer {invalid_token}'})
         self.assertEqual(response.status_code, 401)
         self.assertIn('The token is invalid', response.json['msg'])
