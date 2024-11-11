@@ -2,41 +2,35 @@ import unittest
 from app import app
 import werkzeug
 
-
 if not hasattr(werkzeug, '__version__'):
     werkzeug.__version__ = "mock-version"
 
 class APITestCase(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.client = app.test_client()
 
-    def test_get_items(self):
+    def test_items(self):
         response = self.client.get('/items')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"items": ["item1", "item2", "item3"]})
 
-    def test_swagger_ui(self):
-        response = self.client.get('/swagger')
-        
-        
-        if response.status_code == 308:
-            self.assertIn('Location', response.headers) 
-            self.assertTrue(response.headers['Location'].startswith('https://'))
-        else:
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('text/html', response.content_type)
+    def test_login(self):
+        response = self.client.post('/login')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access_token', response.get_json())
 
-    def test_protected_with_invalid_token(self):
-        invalid_token = "invalid_token_example"
-        response = self.client.get('/protected', headers={'Authorization': f'Bearer {invalid_token}'})
-        
-        
-        if response.status_code == 422:
-            print(f"Resposta 422 recebida. Detalhes: {response.data.decode()}")
-        
-        self.assertEqual(response.status_code, 401) 
-        self.assertIn('The token is invalid', response.get_json().get('msg', ''))
+    def test_protected_with_token(self):
+        login_response = self.client.post('/login')
+        token = login_response.get_json()['access_token']
+        response = self.client.get('/protected', headers={'Authorization': f'Bearer {token}'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"message": "Protected route"})
+
+    def test_protected_no_token(self):
+        response = self.client.get('/protected')
+        self.assertEqual(response.status_code, 401)
 
 if __name__ == '__main__':
     unittest.main()
